@@ -2,10 +2,6 @@
 
 #include "macro.h"
 
-typedef struct Node Node;
-
-Node *Node_new(void *value);
-
 typedef struct Trie Trie;
 
 Trie *Trie_new(void);

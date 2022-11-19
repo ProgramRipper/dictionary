@@ -6,10 +6,10 @@
 
 /* Node */
 
-struct Node {
+typedef struct Node {
   void *value;
-  Node *next[N];
-};
+  struct Node *next[N];
+} Node;
 
 Node *Node_new(void *value) {
   Node *node = malloc(sizeof(Node));
