@@ -4,6 +4,8 @@
 
 #include "trie.h"
 
+#define N 26
+
 /* Node */
 
 typedef struct Node {

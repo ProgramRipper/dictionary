@@ -4,7 +4,7 @@ project(dictionary VERSION 0.1.0)
 include(CTest)
 enable_testing()
 
-add_executable(dictionary.exe main.c trie.c)
+add_executable(dictionary.exe main.c trie.c cipher.c)
 
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})

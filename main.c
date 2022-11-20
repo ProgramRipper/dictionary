@@ -1,34 +1,22 @@
-#include <stdbool.h>
-#include <stdio.h>
 #include <string.h>
 
 #include <openssl/evp.h>
 
-#include "trie.h"
+#include "cipher.h"
 
-int main(int argc, char *argv[]) {
-  Trie *trie = Trie_new();
-  char *values[] = {"bar", "baz", "foo"};
+int main() {
 
-  Trie_set(trie, "foo", values[0]);
-  Trie_set(trie, "bar", values[1]);
-  Trie_set(trie, "baz", values[2]);
+  unsigned char salt[8] = "ssaalltt", pwd[8] = "password", a[256], b[256],
+                c[256];
 
-  printf("%s\n", Trie_get(trie, "foo"));
-  printf("%s\n", Trie_get(trie, "bar"));
-  printf("%s\n", Trie_get(trie, "baz"));
-
-  char *result[3] = {""};
-  int n = Trie_startswith(trie, "b", values);
-
-  for (int i = 0; i < n; i++) {
-    printf("%d:%s\n", i, values[i]);
+  for (int i = 255; i >= 0; i--) {
+    a[i] = i;
   }
 
-  Trie_del(trie, "bar");
-  Trie_get(trie, "bar");
-  printf("%p\n", Trie_get(trie, "bar")); // null
-  printf("%s\n", Trie_get(trie, "baz")); // not null
+  encrypt(salt, pwd, a, b);
+  decrypt(salt, pwd, b, c);
 
-  Trie_free(trie);
+  printf("%s\n", strcmp(a, c) ? "fail" : "pass");
+
+  return 0;
 }
