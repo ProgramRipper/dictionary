@@ -1,22 +1,28 @@
 #include <string.h>
 
 #include <openssl/evp.h>
+#include <openssl/rand.h>
 
 #include "cipher.h"
 
 int main() {
 
-  unsigned char salt[8] = "ssaalltt", pwd[8] = "password", a[256], b[256],
-                c[256];
+  unsigned char salt[8], pwd[8] = "password", a[1024] = {0}, b[1024] = {0},
+                         c[1024] = {0};
 
-  for (int i = 255; i >= 0; i--) {
-    a[i] = i;
+  RAND_bytes(salt, 8);
+
+  for (char i = 0; i < 96; i++) {
+    a[i] = i + 32;
   }
+  int inl = 96, outl = 0;
+  encrypt(salt, pwd, a, inl, b, &outl);
+  printf("加密结果长度：%d\n", outl);
+  inl = outl;
+  decrypt(salt, pwd, b, inl, c, &outl);
 
-  encrypt(salt, pwd, a, b);
-  decrypt(salt, pwd, b, c);
-
-  printf("%s\n", strcmp(a, c) ? "fail" : "pass");
+  printf("%s\n%s\n", a, c);
+  printf("%s\n", memcmp(a, c, 96) ? "fail" : "pass");
 
   return 0;
 }

@@ -9,7 +9,7 @@
 #define ROUND 65536
 
 void encrypt(const unsigned char *salt, const unsigned char *pwd,
-             const unsigned char *in, unsigned char *out) {
+             const unsigned char *in, int inl, unsigned char *out, int *outl) {
   int len;
   const EVP_CIPHER *cipher = CIPHER;
   const EVP_MD *md = MD;
@@ -19,14 +19,16 @@ void encrypt(const unsigned char *salt, const unsigned char *pwd,
   EVP_BytesToKey(cipher, md, salt, pwd, strlen(pwd), ROUND, key, iv);
 
   EVP_EncryptInit_ex(ctx, cipher, NULL, key, iv);
-  EVP_EncryptUpdate(ctx, out, &len, in, strlen(in));
-  EVP_EncryptFinal_ex(ctx, out + len, &len);
+  EVP_EncryptUpdate(ctx, out, &len, in, inl);
+  *outl = len;
+  EVP_EncryptFinal_ex(ctx, out + *outl, &len);
+  *outl += len;
 
   EVP_CIPHER_CTX_free(ctx);
 }
 
 void decrypt(const unsigned char *salt, const unsigned char *pwd,
-             const unsigned char *in, unsigned char *out) {
+             const unsigned char *in, int inl, unsigned char *out, int *outl) {
   int len;
   const EVP_CIPHER *cipher = CIPHER;
   const EVP_MD *md = MD;
@@ -36,8 +38,10 @@ void decrypt(const unsigned char *salt, const unsigned char *pwd,
   EVP_BytesToKey(cipher, md, salt, pwd, strlen(pwd), ROUND, key, iv);
 
   EVP_DecryptInit_ex(ctx, cipher, NULL, key, iv);
-  EVP_DecryptUpdate(ctx, out, &len, in, strlen(in));
-  EVP_DecryptFinal_ex(ctx, out + len, &len);
+  EVP_DecryptUpdate(ctx, out, &len, in, inl);
+  *outl = len;
+  EVP_DecryptFinal_ex(ctx, out + *outl, &len);
+  *outl += len;
 
   EVP_CIPHER_CTX_free(ctx);
 }
