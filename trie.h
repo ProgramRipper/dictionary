@@ -1,7 +1,5 @@
 #pragma once
 
-#include "macro.h"
-
 typedef struct Trie Trie;
 
 Trie *Trie_new(void);

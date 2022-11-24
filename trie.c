@@ -25,6 +25,7 @@ Node *Node_new(void *value) {
 /* Trie */
 
 struct Trie {
+  int size;
   Node *root;
 };
 
@@ -39,8 +40,11 @@ Trie *Trie_new(void) {
 void Trie_free(Trie *trie) {
   bool layer = false;
   int sizes[2] = {1, 0};
-  Node *node, *stacks[2][SIZE] = {NULL};
+  Node *node, ***stacks;
 
+  stacks = malloc(sizeof(Node **) * 2);
+  stacks[0] = calloc(trie->size, sizeof(Node *));
+  stacks[1] = calloc(trie->size, sizeof(Node *));
   stacks[0][0] = trie->root;
 
   while (sizes[layer]) {
@@ -61,6 +65,9 @@ void Trie_free(Trie *trie) {
   }
 
   free(trie);
+  free(stacks[0]);
+  free(stacks[1]);
+  free(stacks);
 }
 
 Node *_seek(Trie *trie, const char *key, const bool create) {
@@ -107,8 +114,11 @@ int Trie_startswith(Trie *trie, const char *prefix, void **out) {
   if (node != NULL) {
     bool layer = false;
     int sizes[2] = {1, 0};
-    Node *stacks[2][SIZE] = {NULL};
+    Node ***stacks;
 
+    stacks = malloc(sizeof(Node **) * 2);
+    stacks[0] = calloc(trie->size, sizeof(Node *));
+    stacks[1] = calloc(trie->size, sizeof(Node *));
     stacks[0][0] = node;
 
     while (sizes[layer]) {
