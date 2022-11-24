@@ -1,3 +1,4 @@
+#include <stdbool.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -8,6 +9,8 @@
 #define SIZE 32
 
 Trie *trie;
+bool modified = false;
+char filename[4096] = "dict.dat";
 
 typedef struct Word {
   char eng[8];
@@ -17,25 +20,25 @@ typedef struct Word {
 void add() {
   Word *word = malloc(sizeof(Word));
 
-  printf("Word: ");
+  printf("单词：");
   scanf("%s", word->eng);
 
   if (Trie_get(trie, word->eng) != NULL) {
-    printf("Word already exists!\n");
+    printf("单词已存在！\n");
     free(word);
     return;
   }
 
-  printf("Meaning: ");
+  printf("释义：");
   scanf("%s", word->chn);
 
   Trie_set(trie, word->eng, word);
+  modified = true;
 }
 
-void show() { // FIXME: 有点玄学问题
+void show() {
   Word *words[SIZE];
   int n = Trie_startswith(trie, "\0", (void **)words);
-
   for (int i = 0; i < n; i++) {
     printf("%s: %s\n", words[i]->eng, words[i]->chn);
   }
@@ -44,58 +47,60 @@ void show() { // FIXME: 有点玄学问题
 void edit() {
   char eng[8];
 
-  printf("Word: ");
+  printf("单词：");
   scanf("%s", eng);
 
   Word *word = Trie_get(trie, eng);
 
   if (word == NULL) {
-    printf("Word not found!\n");
+    printf("单词不存在！\n");
     return;
   }
 
-  printf("Meaning: ");
+  printf("释义：");
   scanf("%s", word->chn);
+  modified = true;
 }
 
 void del() {
   char eng[8];
 
-  printf("Word: ");
+  printf("单词：");
   scanf("%s", eng);
 
   Word *word = Trie_get(trie, eng);
 
   if (word == NULL) {
-    printf("Word not found!\n");
+    printf("单词不存在！\n");
     return;
   }
 
   Trie_del(trie, eng);
   free(word);
+  modified = true;
 }
 
 void find() {
   char eng[8];
 
-  printf("Word: ");
+  printf("单词：");
   scanf("%s", eng);
 
   Word *word = Trie_get(trie, eng);
 
   if (word == NULL) {
-    printf("Word not found!\n");
+    printf("单词不存在！\n");
     return;
   }
 
-  printf("Meaning: %s\n", word->chn);
+  printf("释义：%s\n", word->chn);
 }
 
 void save() {
-  FILE *file = fopen("dict.dat", "w");
+  FILE *file = fopen(filename, "w");
 
   if (file == NULL) {
-    printf("Failed to open file!\n");
+    printf("无法打开文件！\n");
     return;
   }
 
@@ -107,13 +112,21 @@ void save() {
   }
 
   fclose(file);
+  modified = false;
 }
 
 void exit_() {
+  if (modified) {
+    printf("词典已修改，是否保存？(Y/n) ");
+    char c = getchar();
+    scanf("%*[^\n]%*c");
+    if (c != 'n') {
+      save();
+    }
+  }
+
   Word *words[SIZE];
   int n = Trie_startswith(trie, "\0", (void **)words);
-
-  save();
 
   for (int i = 0; i < n; i++) {
     free(words[i]);
@@ -126,14 +139,14 @@ void exit_() {
 void prefix_find() {
   char eng[8];
 
-  printf("Prefix: ");
+  printf("前缀：");
   scanf("%s", eng);
 
   Word *words[SIZE];
   int n = Trie_startswith(trie, eng, (void **)words);
 
   if (n == 0) {
-    printf("Word not found!\n");
+    printf("无法找到符合此前缀的单词！\n");
     return;
   }
 
@@ -142,23 +155,47 @@ void prefix_find() {
   }
 }
 
-int main() {
-  SetConsoleOutputCP(65001);
+void open() {
+  if (modified) {
+    printf("词典已修改，是否保存？(Y/n) ");
+    char c = getchar();
+    scanf("%*[^\n]%*c");
+    if (c != 'n') {
+      save();
+    }
+  }
 
-  FILE *fp = fopen("dict.dat", "r");
+  printf("文件名：");
+  scanf("%s", filename);
+
+  FILE *file = fopen(filename, "r");
+
+  if (file == NULL) {
+    printf("无法打开文件！\n");
+    return;
+  }
+
+  Trie_free(trie);
+  trie = Trie_new();
+
+  while (true) {
+    Word *word = malloc(sizeof(Word));
+    if (fscanf(file, "%s %s\n", word->eng, word->chn) == EOF) {
+      break;
+    }
+    Trie_set(trie, word->eng, word);
+  }
+
+  fclose(file);
+  modified = false;
+}
+
+int main() {
+  SetConsoleOutputCP(65001); // 设置控制台输出编码为 UTF-8，防止中文乱码
 
   trie = Trie_new();
 
-  if (fp != NULL) {
-    while (!feof(fp)) {
-      Word *word = malloc(sizeof(Word));
-      fscanf(fp, "%s %s", word->eng, word->chn);
-      Trie_set(trie, word->eng, word);
-    }
-    fclose(fp);
-  }
-
-  while (1) {
+  while (true) {
     char cmd;
 
     printf("\
@@ -171,18 +208,19 @@ f: 信息保存\n\
 g: 退出系统\n\
 h: 模糊查询\n\
 i: 清空屏幕\n\
-> \
-");
+j: 打开文件\n\
+%s > \
+",
+           filename);
 
-    while (!('a' <= (cmd = getchar()) && cmd <= 'z'))
+    while (!('a' <= (cmd = getchar()) && cmd <= 'z')) // 读取第一个有效字符
       ;
-    scanf("%*[^\n]%*c"); // ???
+    scanf("%*[^\n]%*c"); // 丢弃输入缓冲区中剩余的字符
     switch (cmd) {
     case 'a': // 词条录入
       add();
       break;
     case 'b': // 信息显示
-      // printf("bbb");
       show();
       break;
     case 'c': // 词条修改
@@ -206,8 +244,11 @@ i: 清空屏幕\n\
     case 'i': // 清空屏幕
       system("cls");
       break;
+    case 'j': // 打开文件
+      open();
+      break;
     default:
-      printf("Invalid command!\n");
+      printf("无效命令！\n");
       break;
     }
   }
