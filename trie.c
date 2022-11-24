@@ -22,6 +22,18 @@ Node *Node_new(void *value) {
   return node;
 }
 
+void Node_free(Node *node) {
+  if (node == NULL) {
+    return;
+  }
+
+  for (int i = 0; i < N; i++) {
+    Node_free(node->next[i]);
+  }
+
+  free(node);
+}
+
 /* Trie */
 
 struct Trie {
@@ -38,36 +50,12 @@ Trie *Trie_new(void) {
 }
 
 void Trie_free(Trie *trie) {
-  bool layer = false;
-  int sizes[2] = {1, 0};
-  Node *node, ***stacks;
-
-  stacks = malloc(sizeof(Node **) * 2);
-  stacks[0] = calloc(trie->size, sizeof(Node *));
-  stacks[1] = calloc(trie->size, sizeof(Node *));
-  stacks[0][0] = trie->root;
-
-  while (sizes[layer]) {
-    for (int i = 0; i < sizes[layer]; i++) {
-      node = stacks[layer][i];
-
-      for (int j = 0; j < N; j++) {
-        if (node->next[j] != NULL) {
-          stacks[!layer][sizes[!layer]++] = node->next[j];
-        }
-      }
-
-      free(node);
-    }
-
-    sizes[layer] = 0;
-    layer = !layer;
+  if (trie == NULL) {
+    return;
   }
 
+  Node_free(trie->root);
   free(trie);
-  free(stacks[0]);
-  free(stacks[1]);
-  free(stacks);
 }
 
 Node *_seek(Trie *trie, const char *key, const bool create) {
@@ -90,6 +78,22 @@ Node *_seek(Trie *trie, const char *key, const bool create) {
   return node;
 }
 
+int _walk(Node *node, void **values) {
+  int n = 0;
+
+  if (node->value != NULL) {
+    values[n++] = node->value;
+  }
+
+  for (int i = 0; i < N; i++) {
+    if (node->next[i] != NULL) {
+      n += _walk(node->next[i], values + n);
+    }
+  }
+
+  return n;
+}
+
 void *Trie_get(Trie *trie, const char *key) {
   Node *node = _seek(trie, key, false);
   return node == NULL ? NULL : node->value;
@@ -109,37 +113,5 @@ void Trie_del(Trie *trie, const char *key) {
 
 int Trie_startswith(Trie *trie, const char *prefix, void **out) {
   Node *node = _seek(trie, prefix, false);
-  int size = 0;
-
-  if (node != NULL) {
-    bool layer = false;
-    int sizes[2] = {1, 0};
-    Node ***stacks;
-
-    stacks = malloc(sizeof(Node **) * 2);
-    stacks[0] = calloc(trie->size, sizeof(Node *));
-    stacks[1] = calloc(trie->size, sizeof(Node *));
-    stacks[0][0] = node;
-
-    while (sizes[layer]) {
-      for (int i = 0; i < sizes[layer]; i++) {
-        node = stacks[layer][i];
-
-        if (node->value != NULL) {
-          out[size++] = node->value;
-        }
-
-        for (int j = 0; j < N; j++) {
-          if (node->next[j] != NULL) {
-            stacks[!layer][sizes[!layer]++] = node->next[j];
-          }
-        }
-      }
-
-      sizes[layer] = 0;
-      layer = !layer;
-    }
-  }
-
-  return size;
+  return node == NULL ? 0 : _walk(node, out);
 }
