@@ -207,8 +207,7 @@ e: 单词查询\n\
 f: 信息保存\n\
 g: 退出系统\n\
 h: 模糊查询\n\
-i: 清空屏幕\n\
-j: 打开文件\n\
+i: 打开文件\n\
 %s > \
 ",
            filename);
@@ -241,16 +240,15 @@ j: 打开文件\n\
     case 'h': // 模糊查询
       prefix_find();
       break;
-    case 'i': // 清空屏幕
-      system("cls");
-      break;
-    case 'j': // 打开文件
+    case 'i': // 打开文件
       open();
       break;
     default:
       printf("无效命令！\n");
       break;
     }
+    system("pause");
+    system("cls");
   }
 
   return 0;
