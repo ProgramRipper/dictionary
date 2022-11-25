@@ -37,7 +37,6 @@ void Node_free(Node *node) {
 /* Trie */
 
 struct Trie {
-  int size;
   Node *root;
 };
 

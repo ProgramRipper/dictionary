@@ -4,13 +4,15 @@
 #include <string.h>
 #include <windows.h>
 
+#include "cipher.h"
 #include "trie.h"
 
+#define SALT 16
 #define SIZE 32
 
 Trie *trie;
 bool modified = false;
-char filename[4096] = "dict.dat";
+char filename[4096] = "dict.dat", pwd[] = "12345678";
 
 typedef struct Word {
   char eng[8];
@@ -97,7 +99,7 @@ void find() {
 }
 
 void save() {
-  FILE *file = fopen(filename, "w");
+  FILE *file = fopen(filename, "wb");
 
   if (file == NULL) {
     printf("无法打开文件！\n");
@@ -105,11 +107,21 @@ void save() {
   }
 
   Word *words[SIZE];
-  int n = Trie_startswith(trie, "\0", (void **)words);
+  int n = Trie_startswith(trie, "\0", (void **)words), inl = 0, outl, saltl;
+  char in[4096] = {0}, out[4096] = {0}, salt[SALT];
+
+  printf("密码：");
+  // scanf("%s", pwd);
 
   for (int i = 0; i < n; i++) {
-    fprintf(file, "%s %s\n", words[i]->eng, words[i]->chn);
+    inl += sprintf(in, "%s %s\n", words[i]->eng, words[i]->chn);
   }
+
+  // hash(in, inl, salt, &saltl);
+  encrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
+
+  // fwrite(salt, 1, SALT, file);
+  fwrite(out, 1, outl, file);
 
   fclose(file);
   modified = false;
@@ -120,7 +132,7 @@ void exit_() {
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
     scanf("%*[^\n]%*c");
-    if (c != 'n') {
+    if (c != 'n' || c != 'N') {
       save();
     }
   }
@@ -160,7 +172,7 @@ void open() {
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
     scanf("%*[^\n]%*c");
-    if (c != 'n') {
+    if (c != 'n' || c != 'N') {
       save();
     }
   }
@@ -168,21 +180,44 @@ void open() {
   printf("文件名：");
   scanf("%s", filename);
 
-  FILE *file = fopen(filename, "r");
+  FILE *file = fopen(filename, "rb");
 
   if (file == NULL) {
     printf("无法打开文件！\n");
     return;
   }
 
+  int inl = 0, outl, saltl;
+  char in[4096] = {0}, out[4096] = {0}, salt1[SALT], salt2[SALT];
+
+  printf("密码：");
+  // scanf("%s", pwd);
+
+  // fread(salt1, 1, SALT, file);
+  inl = fread(in, 1, 4096, file);
+
+  decrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
+  printf("%s\n", out);
+  // hash(out, outl, salt2, &saltl);
+  // printf("%s %s\n", salt1, salt2);
+  // if (memcmp(salt1, salt2, SALT) != 0) {
+  //   printf("密码错误！\n");
+  //   // return;
+  // }
+
   Trie_free(trie);
   trie = Trie_new();
 
+  outl = 0;
   while (true) {
     Word *word = malloc(sizeof(Word));
-    if (fscanf(file, "%s %s\n", word->eng, word->chn) == EOF) {
+    char buf[4096];
+    sscanf(out + outl, "%[^\n]", buf);
+    if (sscanf(buf, "%s %s", word->eng, word->chn) != 2) {
+      free(word);
       break;
     }
+    outl += strlen(buf) + 1;
     Trie_set(trie, word->eng, word);
   }
 
