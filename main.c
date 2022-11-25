@@ -4,15 +4,17 @@
 #include <string.h>
 #include <windows.h>
 
+#include <openssl/evp.h>
+
 #include "cipher.h"
 #include "trie.h"
 
-#define SALT 16
+#define SALT 8
 #define SIZE 32
 
 Trie *trie;
 bool modified = false;
-char filename[4096] = "dict.dat", pwd[] = "12345678";
+char filename[4096] = "dict.dat", pwd[4096] = "\n";
 
 typedef struct Word {
   char eng[8];
@@ -20,6 +22,18 @@ typedef struct Word {
 } Word;
 
 void add() {
+  if (*pwd != '\n') {
+    char password[4096] = {0};
+
+    printf("请输入密码：");
+    scanf("%*c");
+    fgets(password, 4096, stdin);
+    if (strcmp(password, pwd) != 0) {
+      printf("密码错误！\n");
+      return;
+    }
+  }
+
   Word *word = malloc(sizeof(Word));
 
   printf("单词：");
@@ -47,6 +61,18 @@ void show() {
 }
 
 void edit() {
+  if (*pwd != '\n') {
+    char password[4096] = {0};
+
+    printf("请输入密码：");
+    scanf("%*c");
+    fgets(password, 4096, stdin);
+    if (strcmp(password, pwd) != 0) {
+      printf("密码错误！\n");
+      return;
+    }
+  }
+
   char eng[8];
 
   printf("单词：");
@@ -65,6 +91,18 @@ void edit() {
 }
 
 void del() {
+  if (*pwd != '\n') {
+    char password[4096] = {0};
+
+    printf("请输入密码：");
+    scanf("%*c");
+    fgets(password, 4096, stdin);
+    if (strcmp(password, pwd) != 0) {
+      printf("密码错误！\n");
+      return;
+    }
+  }
+
   char eng[8];
 
   printf("单词：");
@@ -108,20 +146,21 @@ void save() {
 
   Word *words[SIZE];
   int n = Trie_startswith(trie, "\0", (void **)words), inl = 0, outl, saltl;
-  char in[4096] = {0}, out[4096] = {0}, salt[SALT];
+  char in[4096] = {0}, out[4096] = {0}, salt[EVP_MAX_MD_SIZE] = {0};
 
-  printf("密码：");
-  // scanf("%s", pwd);
+  printf("请设置密码：");
+  scanf("%*c");
+  fgets(pwd, 4096, stdin);
 
   for (int i = 0; i < n; i++) {
-    inl += sprintf(in, "%s %s\n", words[i]->eng, words[i]->chn);
+    inl += sprintf(in + inl, "%s %s\n", words[i]->eng, words[i]->chn);
   }
 
-  // hash(in, inl, salt, &saltl);
+  hash(in, inl, salt, &saltl);
   encrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
 
-  // fwrite(salt, 1, SALT, file);
-  fwrite(out, 1, outl, file);
+  fwrite(salt, 1, EVP_MAX_MD_SIZE, file);
+  fputs(out, file);
 
   fclose(file);
   modified = false;
@@ -188,22 +227,23 @@ void open() {
   }
 
   int inl = 0, outl, saltl;
-  char in[4096] = {0}, out[4096] = {0}, salt1[SALT], salt2[SALT];
+  char in[4096] = {0}, out[4096] = {0}, salt1[EVP_MAX_MD_SIZE] = {0},
+       salt2[EVP_MAX_MD_SIZE] = {0};
 
-  printf("密码：");
-  // scanf("%s", pwd);
+  printf("请输入密码：");
+  scanf("%*c");
+  fgets(pwd, 4096, stdin);
 
-  // fread(salt1, 1, SALT, file);
+  fread(salt1, 1, EVP_MAX_MD_SIZE, file);
   inl = fread(in, 1, 4096, file);
 
   decrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
-  printf("%s\n", out);
-  // hash(out, outl, salt2, &saltl);
-  // printf("%s %s\n", salt1, salt2);
-  // if (memcmp(salt1, salt2, SALT) != 0) {
-  //   printf("密码错误！\n");
-  //   // return;
-  // }
+  hash(out, outl, salt2, &saltl);
+
+  if (memcmp(salt1, salt2, EVP_MAX_MD_SIZE) != 0) {
+    printf("密码错误！\n");
+    return;
+  }
 
   Trie_free(trie);
   trie = Trie_new();
@@ -213,7 +253,7 @@ void open() {
     Word *word = malloc(sizeof(Word));
     char buf[4096];
     sscanf(out + outl, "%[^\n]", buf);
-    if (sscanf(buf, "%s %s", word->eng, word->chn) != 2) {
+    if (sscanf(buf, "%s %s\n", word->eng, word->chn) != 2) {
       free(word);
       break;
     }
@@ -226,6 +266,7 @@ void open() {
 }
 
 int main() {
+  SetConsoleCP(65001);
   SetConsoleOutputCP(65001); // 设置控制台输出编码为 UTF-8，防止中文乱码
 
   trie = Trie_new();
