@@ -13,7 +13,7 @@
 
 Trie *trie;
 bool modified = false;
-char filename[4096] = "dict.dat", pwd[4096] = "\n";
+char filename[4096] = "dict.dat", pwd[4096] = {0};
 
 typedef struct Word {
   char eng[8];
@@ -21,12 +21,15 @@ typedef struct Word {
 } Word;
 
 void add() {
-  if (*pwd != '\n') {
-    char password[4096] = {0};
+  if (*pwd) {
+    char c, password[4096] = {0};
+    int len = 0;
 
     printf("请输入密码：");
-    scanf("%*c");
-    fgets(password, 4096, stdin);
+    scanf("%*.");
+    while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
+      password[len++] = c;
+    }
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -60,12 +63,15 @@ void show() {
 }
 
 void edit() {
-  if (*pwd != '\n') {
-    char password[4096] = {0};
+  if (*pwd) {
+    char c, password[4096] = {0};
+    int len = 0;
 
     printf("请输入密码：");
-    scanf("%*c");
-    fgets(password, 4096, stdin);
+    scanf("%*.");
+    while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
+      password[len++] = c;
+    }
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -90,12 +96,15 @@ void edit() {
 }
 
 void del() {
-  if (*pwd != '\n') {
-    char password[4096] = {0};
+  if (*pwd) {
+    char c, password[4096] = {0};
+    int len = 0;
 
     printf("请输入密码：");
-    scanf("%*c");
-    fgets(password, 4096, stdin);
+    scanf("%*.");
+    while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
+      password[len++] = c;
+    }
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -144,19 +153,23 @@ void save() {
   }
 
   Word *words[SIZE];
-  int n = Trie_startswith(trie, "\0", (void **)words), inl = 0, outl, saltl;
-  char in[4096] = {0}, out[4096] = {0}, salt[EVP_MAX_MD_SIZE] = {0};
+  int n = Trie_startswith(trie, "\0", (void **)words), pwdl = 0, inl = 0, outl,
+      saltl;
+  char c, in[4096] = {0}, out[4096] = {0}, salt[EVP_MAX_MD_SIZE] = {0};
 
   printf("请设置密码：");
-  scanf("%*c");
-  fgets(pwd, 4096, stdin);
+  scanf("%*.");
+  memset(pwd, 0, sizeof(pwd));
+  while ((c = getchar()) != '\n' && c != EOF && pwdl < 4096) {
+    pwd[pwdl++] = c;
+  }
 
   for (int i = 0; i < n; i++) {
     inl += sprintf(in + inl, "%s %s\n", words[i]->eng, words[i]->chn);
   }
 
   hash(in, inl, salt, &saltl);
-  encrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
+  encrypt(NULL, pwd, pwdl, in, inl, out, &outl);
 
   fwrite(salt, 1, EVP_MAX_MD_SIZE, file);
   fputs(out, file);
@@ -169,7 +182,7 @@ void exit_() {
   if (modified) {
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
-    scanf("%*[^\n]%*c");
+    scanf("%*[^\n]");
     if (c != 'n' || c != 'N') {
       save();
     }
@@ -209,7 +222,7 @@ void open() {
   if (modified) {
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
-    scanf("%*[^\n]%*c");
+    scanf("%*[^\n]");
     if (c != 'n' || c != 'N') {
       save();
     }
@@ -225,18 +238,21 @@ void open() {
     return;
   }
 
-  int inl = 0, outl, saltl;
-  char in[4096] = {0}, out[4096] = {0}, salt1[EVP_MAX_MD_SIZE] = {0},
-       salt2[EVP_MAX_MD_SIZE] = {0};
+  int pwdl = 0, inl = 0, outl, saltl;
+  char c, in[4096] = {0}, out[4096] = {0}, salt1[EVP_MAX_MD_SIZE] = {0},
+          salt2[EVP_MAX_MD_SIZE] = {0};
 
   printf("请输入密码：");
-  scanf("%*c");
-  fgets(pwd, 4096, stdin);
+  scanf("%*.");
+  memset(pwd, 0, sizeof(pwd));
+  while ((c = getchar()) != '\n' && c != EOF) {
+    pwd[pwdl++] = c;
+  }
 
   fread(salt1, 1, EVP_MAX_MD_SIZE, file);
   inl = fread(in, 1, 4096, file);
 
-  decrypt(NULL, pwd, strlen(pwd), in, inl, out, &outl);
+  decrypt(NULL, pwd, pwdl, in, inl, out, &outl);
   hash(out, outl, salt2, &saltl);
 
   if (memcmp(salt1, salt2, EVP_MAX_MD_SIZE) != 0) {
@@ -286,7 +302,7 @@ i: 打开文件\n\
 
     while (!('a' <= (cmd = getchar()) && cmd <= 'z')) // 读取第一个有效字符
       ;
-    scanf("%*[^\n]%*c"); // 丢弃输入缓冲区中剩余的字符
+    scanf("%*[^\n]"); // 丢弃输入缓冲区中剩余的字符
     switch (cmd) {
     case 'a': // 词条录入
       add();
