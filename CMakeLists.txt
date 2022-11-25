@@ -1,8 +1,7 @@
 cmake_minimum_required(VERSION 3.0.0)
 project(dictionary VERSION 0.1.0)
 
-include(CTest)
-enable_testing()
+add_compile_options(-fexec-charset=GBK)
 
 add_executable(dictionary.exe main.c trie.c cipher.c)
 

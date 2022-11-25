@@ -2,7 +2,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <windows.h>
 
 #include <openssl/evp.h>
 
@@ -266,9 +265,6 @@ void open() {
 }
 
 int main() {
-  SetConsoleCP(65001);
-  SetConsoleOutputCP(65001); // 设置控制台输出编码为 UTF-8，防止中文乱码
-
   trie = Trie_new();
 
   while (true) {
