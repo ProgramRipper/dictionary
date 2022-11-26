@@ -29,11 +29,12 @@ void add() {
     char c, password[4096] = {0};
     int len = 0;
 
+    scanf("%*[^\n]"); // 清空输入缓冲区，防止输入密码时误读取回车
+    getchar();
     printf("请输入密码：");
     while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
       password[len++] = c;
-    }                    // 支持读取空格或空行
-    scanf("%*[^\n]%*c"); // 清空输入缓冲区，防止输入密码时误读取回车
+    } // 支持读取空格或空行
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -76,11 +77,12 @@ void edit() {
     char c, password[4096] = {0};
     int len = 0;
 
+    scanf("%*[^\n]");
+    getchar();
     printf("请输入密码：");
     while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
       password[len++] = c;
     }
-    scanf("%*[^\n]%*c");
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -110,11 +112,12 @@ void del() {
     char c, password[4096] = {0};
     int len = 0;
 
+    scanf("%*[^\n]");
+    getchar();
     printf("请输入密码：");
     while ((c = getchar()) != '\n' && c != EOF && len < 4096) {
       password[len++] = c;
     }
-    scanf("%*[^\n]%*c");
     if (strcmp(password, pwd) != 0) {
       printf("密码错误！\n");
       return;
@@ -171,12 +174,13 @@ void save() {
   char c, in[BUF_SIZE] = {0}, out[BUF_SIZE] = {0}, salt[EVP_MAX_MD_SIZE] = {0};
   // in: 明文，out: 密文，EVP_MAX_MD_SIZE: 最大散列长度，是个安全的冗余值
 
+  scanf("%*[^\n]");
+  getchar();
   printf("请设置密码：");
   memset(pwd, 0, sizeof(pwd)); // 清空密码
   while ((c = getchar()) != '\n' && c != EOF && pwdl < 4096) {
     pwd[pwdl++] = c;
   }
-  scanf("%*[^\n]%*c");
 
   for (int i = 0; i < n; i++) {
     inl += sprintf(in + inl, "%s %s\n", words[i]->eng, words[i]->chn);
@@ -197,7 +201,7 @@ void exit_() {
   if (modified) { // 有修改未保存
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
-    scanf("%*[^\n]%*c"); // 清空输入缓冲区
+    scanf("%*[^\n]"); // 清空输入缓冲区
     if (c != 'n' || c != 'N') {
       save();
     } // 默认保存
@@ -236,7 +240,7 @@ void open() {
   if (modified) {
     printf("词典已修改，是否保存？(Y/n) ");
     char c = getchar();
-    scanf("%*[^\n]%*c");
+    scanf("%*[^\n]");
     if (c != 'n' || c != 'N') {
       save();
     }
@@ -248,25 +252,33 @@ void open() {
   FILE *file = fopen(filename, "rb");
 
   if (file == NULL) {
-    printf("无法打开文件！\n");
+    printf("文件不存在，是否创建？(Y/n) ");
+    char c = getchar();
+    scanf("%*[^\n]"); // 清空输入缓冲区
+    if (c != 'n' || c != 'N') {
+      Trie_free(trie);
+      trie = Trie_new();
+      save();
+    } // 默认创建
     return;
   }
 
   int pwdl = 0, inl = 0, outl, saltl;
   // saltl: salt2 长度
-  char c, in[4096] = {0}, out[4096] = {0}, salt1[EVP_MAX_MD_SIZE] = {0},
+  char c, in[BUF_SIZE] = {0}, out[BUF_SIZE] = {0}, salt1[EVP_MAX_MD_SIZE] = {0},
           salt2[EVP_MAX_MD_SIZE] = {0};
   // salt1: 从文件读取的盐，salt2: 生成的盐
 
+  scanf("%*[^\n]");
+  getchar();
   printf("请输入密码：");
   memset(pwd, 0, sizeof(pwd));
   while ((c = getchar()) != '\n' && c != EOF) {
     pwd[pwdl++] = c;
   }
-  scanf("%*[^\n]%*c");
 
   fread(salt1, 1, EVP_MAX_MD_SIZE, file); // 读取 salt1
-  inl = fread(in, 1, 4096, file);         // 读取密文
+  inl = fread(in, 1, BUF_SIZE, file);     // 读取密文
 
   decrypt(NULL, pwd, pwdl, in, inl, out, &outl); // 解密
   hash(out, outl, salt2, &saltl);                // 生成 salt2
@@ -282,7 +294,7 @@ void open() {
   outl = 0;
   while (true) {
     Word *word = malloc(sizeof(Word));
-    char buf[4096];
+    char buf[64];
 
     sscanf(out + outl, "%[^\n]", buf);
     if (sscanf(buf, "%s %s\n", word->eng, word->chn) != 2) { // 反序列化字典
@@ -320,7 +332,7 @@ i: 打开文件\n\
 
     while (!('a' <= (cmd = getchar()) && cmd <= 'z')) // 读取第一个有效字符
       ;
-    scanf("%*[^\n]%*c");
+    scanf("%*[^\n]");
     switch (cmd) {
     case 'a': // 词条录入
       add();
