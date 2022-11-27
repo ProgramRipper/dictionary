@@ -199,10 +199,11 @@ void save() {
 // 退出系统
 void exit_() {
   if (modified) { // 有修改未保存
+    scanf("%*[^\n]");
     printf("词典已修改，是否保存？(Y/n) ");
-    char c = getchar();
-    scanf("%*[^\n]"); // 清空输入缓冲区
-    if (c != 'n' || c != 'N') {
+    char c[4096];
+    scanf("%s", c); // 清空输入缓冲区
+    if (*c != 'n' && *c != 'N') {
       save();
     } // 默认保存
   }
@@ -238,10 +239,11 @@ void prefix_find() {
 // 打开文件
 void open() {
   if (modified) {
-    printf("词典已修改，是否保存？(Y/n) ");
-    char c = getchar();
     scanf("%*[^\n]");
-    if (c != 'n' || c != 'N') {
+    printf("词典已修改，是否保存？(Y/n) ");
+    char c[4096];
+    scanf("%s", c);
+    if (*c != 'n' && *c != 'N') {
       save();
     }
   }
@@ -252,10 +254,11 @@ void open() {
   FILE *file = fopen(filename, "rb");
 
   if (file == NULL) {
+    scanf("%*[^\n]");
     printf("文件不存在，是否创建？(Y/n) ");
-    char c = getchar();
-    scanf("%*[^\n]"); // 清空输入缓冲区
-    if (c != 'n' || c != 'N') {
+    char c[4096];
+    scanf("%s", c); // 清空输入缓冲区
+    if (*c != 'n' && *c != 'N') {
       Trie_free(trie);
       trie = Trie_new();
       save();
